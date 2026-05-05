@@ -66,17 +66,32 @@ A BRCA1 Copy Number Variant (CNV) previously classified as "Variant of Uncertain
 
 > "'BRCA1 copy number variant pathogenic reclassification' — Cortex Search surfaces relevant publications instantly. The PI validates the reclassification against published evidence without leaving the platform. 200 papers indexed and searchable."
 
-### [3:00–3:20] DATA LAKE EXPORT (Show: Ask Genomics page, click export button)
+### [3:00–3:15] DATA LAKE EXPORT (Show: Ask Genomics page, click export button)
 
-> "Now the clinical handoff. Click 'Export Reclassified Cohort to Data Lake' — 204 records flow to LAKE.COHORT_EXPORT, tagged with the export reason. From there, the S3 stage feeds the Glue catalog, and the clinical team queries via Athena. Same data, governed end-to-end, zero copy."
+> "Now the clinical handoff. Click 'Export Reclassified Cohort to Data Lake' — 208 records flow to LAKE.COHORT_EXPORT, tagged with the reclassification reason and timestamp. This triggers a COPY INTO the S3 stage as Parquet."
 
-### [3:20–3:40] AMAZON Q (Show: Switch to QuickSight)
+### [3:15–3:30] GLUE CATALOG (Show: Switch to AWS Console → Glue → Data Catalog → Databases → healthcare_genomics_iceberg → Tables → cohort_export)
 
-> "The Research Director opens QuickSight. Amazon Q: 'Which gene has the highest pathogenic count?' — BRCA1. Confirmed. The executive sees portfolio-level metrics from the same governed source. No data divergence."
+> "In the AWS Glue Data Catalog — same region, Oregon — the database 'healthcare_genomics_iceberg' already has the table registered. 16 columns: patient ID, cohort, gene, variant type, allele frequency, export reason. The schema is automatically inferred from the Parquet metadata. No ETL jobs, no crawlers — the table definition is pre-registered and Snowflake writes directly to the S3 location."
 
-### [3:40–4:00] CLOSE
+### [3:30–3:50] ATHENA QUERY (Show: Switch to Athena Console → Query editor → Run query)
 
-> "We started with an ACMG reclassification — a real-world crisis that hits genomics labs regularly. In under 4 minutes: 204 affected patients identified, biobank confirmed for cascade testing, AI classification validated the pathogenicity, literature corroborated the evidence, and the cohort was exported to the clinical team via the AWS data lake. That's precision medicine research — Snowflake and AWS turning a multi-week crisis response into a 4-minute workflow."
+> "Now the clinical team's view. In Amazon Athena — select the 'healthcare_genomics_iceberg' database — and run: 'SELECT cohort_id, COUNT star, AVG allele_frequency FROM cohort_export GROUP BY cohort_id.' Results in under a second: 130 non-responders, 78 responders. Same governed data that was in Snowflake 30 seconds ago, now queryable by any AWS service. The clinical team uses their existing Athena workflows — zero friction."
+
+**Athena query to run:**
+```sql
+SELECT cohort_id, COUNT(*) AS patient_count, ROUND(AVG(allele_frequency), 4) AS avg_af
+FROM healthcare_genomics_iceberg.cohort_export
+GROUP BY cohort_id
+```
+
+### [3:50–4:10] AMAZON Q (Show: Switch to QuickSight)
+
+> "The Research Director opens QuickSight. Amazon Q: 'Which gene has the highest pathogenic count?' — BRCA1. Confirmed across all three access patterns: Streamlit for research, Athena for clinical ops, QuickSight for executive. One governed source, three consumption layers."
+
+### [4:10–4:30] CLOSE
+
+> "We started with an ACMG reclassification — a real-world crisis that hits genomics labs regularly. In under 4 minutes: 208 affected patients identified, biobank confirmed for cascade testing, AI classification validated the pathogenicity, literature corroborated the evidence, data exported to S3, visible in Glue, and queryable in Athena — all from one governed Snowflake platform. That's precision medicine research — Snowflake and AWS turning a multi-week crisis response into a 4-minute workflow."
 
 ---
 
@@ -92,6 +107,9 @@ A BRCA1 Copy Number Variant (CNV) previously classified as "Variant of Uncertain
 - [ ] Switch to Anomaly Detection — select BRCA1, verify chart renders
 - [ ] Switch to AI Classify — select a variant, click classify button, verify JSON output
 - [ ] Test publication search: "BRCA1 copy number variant pathogenic"
-- [ ] Test data lake export button
+- [ ] Test data lake export button — verify "208 records" success message
+- [ ] Open AWS Glue Console (us-west-2): Databases → healthcare_genomics_iceberg → Tables → cohort_export
+- [ ] Open Athena Console (us-west-2): Select database healthcare_genomics_iceberg, run: `SELECT cohort_id, COUNT(*) AS patient_count, ROUND(AVG(allele_frequency), 4) AS avg_af FROM cohort_export GROUP BY cohort_id`
+- [ ] Verify Athena returns 2 rows (COHORT_RESPONDERS: 78, COHORT_NON_RESPONDERS: 130)
 - [ ] Open QuickSight: https://us-west-2.quicksight.aws.amazon.com/sn/dashboards/hc-genomics-dashboard
 - [ ] Test Q topic question: "Which gene has the highest pathogenic count?"
