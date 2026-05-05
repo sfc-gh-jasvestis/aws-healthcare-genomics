@@ -1,0 +1,15 @@
+definition_version: 2
+entities:
+  genomics_app:
+    type: streamlit
+    identifier:
+      name: GENOMICS_RESEARCH_APP
+      schema: APP
+      database: HEALTHCARE_GENOMICS
+    title: "Genomics Research Data Platform"
+    query_warehouse: CORTEX
+    main_file: streamlit_app.py
+    stage: HEALTHCARE_GENOMICS.APP.STREAMLIT_STAGE
+    artifacts:
+      - streamlit_app.py
+      - environment.yml
