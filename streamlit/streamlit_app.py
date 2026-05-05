@@ -47,20 +47,40 @@ if page == "Variant Explorer":
     c3.metric("Pathogenic", f"{kpi['PATHOGENIC'].iloc[0]:,}")
     c4.metric("VUS (Under Review)", f"{kpi['VUS'].iloc[0]:,}", delta="204 reclassified", delta_color="inverse")
 
+    st.subheader("Pathogenic Variant Rate by Gene")
+    gene_stats = session.sql("""
+        SELECT GENE, COUNT(*) AS TOTAL,
+               COUNT_IF(CLINICAL_SIGNIFICANCE = 'PATHOGENIC') AS PATHOGENIC_COUNT,
+               ROUND(COUNT_IF(CLINICAL_SIGNIFICANCE = 'PATHOGENIC') * 100.0 / COUNT(*), 1)::FLOAT AS PATHOGENIC_PCT
+        FROM HEALTHCARE_GENOMICS.RAW.VARIANTS
+        GROUP BY GENE ORDER BY PATHOGENIC_PCT DESC
+    """).to_pandas()
+    if not gene_stats.empty:
+        for col in ["TOTAL", "PATHOGENIC_COUNT", "PATHOGENIC_PCT"]:
+            gene_stats[col] = pd.to_numeric(gene_stats[col], errors="coerce")
+        gene_stats["HIGHLIGHT"] = gene_stats["GENE"].apply(lambda g: "BRCA1 (30.9%)" if g == "BRCA1" else "Other genes (~15%)")
+        fig = px.bar(gene_stats, x="GENE", y="PATHOGENIC_PCT", color="HIGHLIGHT",
+                     color_discrete_map={"BRCA1 (30.9%)": "#FF4B4B", "Other genes (~15%)": "#636EFA"},
+                     title="BRCA1 has 2x the pathogenic rate of any other gene")
+        fig.add_hline(y=15, line_dash="dot", line_color="gray", annotation_text="Baseline ~15%")
+        fig.update_layout(height=380, margin=dict(t=40, b=10), yaxis_title="Pathogenic %", showlegend=True)
+        st.plotly_chart(fig, use_container_width=True)
+
     st.subheader("Allele Frequency Distribution")
     var_df = session.sql(f"""
         SELECT GENE, ALLELE_FREQUENCY::FLOAT AS AF, CLINICAL_SIGNIFICANCE, VARIANT_TYPE
         FROM HEALTHCARE_GENOMICS.RAW.VARIANTS
-        WHERE ALLELE_FREQUENCY > 0.01 {gene_sql}
-        ORDER BY RANDOM() LIMIT 1000
+        WHERE ALLELE_FREQUENCY > 0.01 AND GENE IN ('BRCA1', 'TP53', 'EGFR', 'KRAS', 'BRCA2')
+        {gene_sql.replace('AND GENE', 'AND GENE') if gene_filter else ''}
+        ORDER BY RANDOM() LIMIT 800
     """).to_pandas()
     if not var_df.empty:
         var_df["AF"] = pd.to_numeric(var_df["AF"], errors="coerce")
         fig = px.strip(var_df, x="GENE", y="AF", color="CLINICAL_SIGNIFICANCE",
                        color_discrete_map={"PATHOGENIC": "#FF4B4B", "LIKELY_PATHOGENIC": "#FF8C00",
                                            "VUS": "#FFC107", "LIKELY_BENIGN": "#4CAF50", "BENIGN": "#2196F3"},
-                       title="Allele Frequency by Gene (colored by clinical significance)")
-        fig.update_layout(height=450, margin=dict(t=40, b=10))
+                       title="Allele Frequency — BRCA1 vs Key Comparison Genes")
+        fig.update_layout(height=400, margin=dict(t=40, b=10))
         st.plotly_chart(fig, use_container_width=True)
 
     with st.expander("Reclassified Variant Details — BRCA1 CNV"):

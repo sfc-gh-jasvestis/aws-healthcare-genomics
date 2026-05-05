@@ -44,7 +44,7 @@ A BRCA1 Copy Number Variant (CNV) previously classified as "Variant of Uncertain
 
 ### [0:40–0:55] THE CRISIS (Show: Switch to Streamlit — Variant Explorer page)
 
-> "Here's the alert banner — immediate visual signal. 204 patients affected. The KPIs update: VUS count now shows '204 reclassified' in red. The strip plot below shows allele frequency by gene — you can see the red pathogenic clusters in BRCA1 are denser than other genes. Expanding the reclassified variant details shows the specific patients, their allele frequencies, and cohort assignments."
+> "Here's the alert banner — immediate visual signal. 204 patients affected. The KPIs update: VUS count now shows '204 reclassified' in red. Below, the pathogenic rate bar chart makes it undeniable — BRCA1 at 30.9%, double the 15% baseline of every other gene. It's highlighted in red against the blue. Expanding the reclassified variant details shows the specific patients, their allele frequencies, and cohort assignments."
 
 ### [0:55–1:20] COHORT IMPACT (Show: Cohort Comparison page)
 
