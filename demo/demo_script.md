@@ -60,7 +60,7 @@ A BRCA1 Copy Number Variant (CNV) previously classified as "Variant of Uncertain
 
 ### [2:10–2:40] AI CLASSIFICATION (Show: AI Classify page, select a variant, click button)
 
-> "Here's where AI accelerates the workflow. I select one of the reclassified variants — a BRCA1 CNV from patient PAT-G with allele frequency 0.49. Click 'Run AI Variant Classification' — Cortex AI generates a full ACMG-style assessment. Gene, position, applicable ACMG criteria — PVS1 for loss-of-function, PM2 for rare frequency — pathogenicity score, classification recommendation, clinical actionability. What used to take a genetics counselor hours is done in seconds."
+> "Here's where AI accelerates the workflow. I select one of the reclassified variants — a BRCA1 CNV splice-site variant with allele frequency 0.004 — extremely rare. Click 'Run AI Variant Classification' — Cortex AI generates a full ACMG-style assessment. Gene, position, applicable ACMG criteria — PVS1 for loss-of-function, PM2 for rarity in population databases — pathogenicity score, classification recommendation, clinical actionability. What used to take a genetics counselor hours is done in seconds."
 
 ### [2:40–3:00] LITERATURE (Show: Publication search below AI section)
 

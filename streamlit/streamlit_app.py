@@ -191,6 +191,11 @@ elif page == "Anomaly Detection":
     st.title("Allele Frequency Anomaly Detection")
     st.caption("ML-based monitoring of 20 gene allele frequency series — detecting unusual shifts")
 
+    hist = session.sql("""
+        SELECT SERIES AS GENE, TS, Y::FLOAT AS OBSERVED
+        FROM HEALTHCARE_GENOMICS.ML.ALLELE_FREQ_TIMESERIES
+        ORDER BY SERIES, TS
+    """).to_pandas()
     anomaly = session.sql("""
         SELECT SERIES AS GENE, TS, Y::FLOAT AS OBSERVED, FORECAST::FLOAT AS EXPECTED,
                LOWER_BOUND::FLOAT AS LOWER_BOUND, UPPER_BOUND::FLOAT AS UPPER_BOUND,
@@ -198,30 +203,36 @@ elif page == "Anomaly Detection":
         FROM HEALTHCARE_GENOMICS.ML.ANOMALY_DETECTION_RESULTS
         ORDER BY TS
     """).to_pandas()
-    if not anomaly.empty:
+    if not hist.empty and not anomaly.empty:
+        for col in ["OBSERVED"]:
+            hist[col] = pd.to_numeric(hist[col], errors="coerce")
         for col in ["OBSERVED", "EXPECTED", "LOWER_BOUND", "UPPER_BOUND", "PERCENTILE"]:
             anomaly[col] = pd.to_numeric(anomaly[col], errors="coerce")
+        anomaly["GENE"] = anomaly["GENE"].str.strip('"')
+        hist["GENE"] = hist["GENE"].str.strip('"')
 
         anomalies_found = anomaly[anomaly["IS_ANOMALY"] == True]
         c1, c2, c3 = st.columns(3)
-        c1.metric("Genes Monitored", anomaly["GENE"].nunique())
-        c2.metric("Observations", len(anomaly))
-        c3.metric("Anomalies Detected", len(anomalies_found), delta="requires review" if len(anomalies_found) > 0 else "all normal")
+        c1.metric("Genes Monitored", hist["GENE"].nunique())
+        c2.metric("Weekly Observations", len(hist))
+        c3.metric("Anomalies Detected", len(anomalies_found), delta="requires review" if len(anomalies_found) > 0 else "all normal", delta_color="inverse" if len(anomalies_found) > 0 else "normal")
 
-        selected_genes = st.multiselect("Select genes to visualize", sorted(anomaly["GENE"].unique()),
-                                        default=["BRCA1", "TP53", "EGFR"] if "BRCA1" in anomaly["GENE"].values else list(anomaly["GENE"].unique()[:3]))
+        selected_genes = st.multiselect("Select genes to visualize", sorted(hist["GENE"].unique()),
+                                        default=["BRCA1", "TP53", "EGFR"])
         for gene in selected_genes:
-            g = anomaly[anomaly["GENE"] == gene]
+            h = hist[hist["GENE"] == gene]
+            a = anomaly[anomaly["GENE"] == gene]
             fig = go.Figure()
-            fig.add_trace(go.Scatter(x=g["TS"], y=g["OBSERVED"], mode="markers+lines", name="Observed", line=dict(color="#636EFA")))
-            fig.add_trace(go.Scatter(x=g["TS"], y=g["EXPECTED"], mode="lines", name="Expected", line=dict(color="#00CC96", dash="dash")))
-            fig.add_trace(go.Scatter(x=g["TS"], y=g["UPPER_BOUND"], mode="lines", line=dict(width=0), showlegend=False))
-            fig.add_trace(go.Scatter(x=g["TS"], y=g["LOWER_BOUND"], mode="lines", line=dict(width=0), fill="tonexty", fillcolor="rgba(0,204,150,0.15)", name="Expected Range"))
-            anom_pts = g[g["IS_ANOMALY"] == True]
-            if not anom_pts.empty:
-                fig.add_trace(go.Scatter(x=anom_pts["TS"], y=anom_pts["OBSERVED"], mode="markers", name="Anomaly",
-                                         marker=dict(color="red", size=12, symbol="x")))
-            fig.update_layout(title=f"{gene} — Allele Frequency Monitoring", height=300, margin=dict(t=40, b=10), yaxis_title="Avg Allele Frequency")
+            fig.add_trace(go.Scatter(x=h["TS"], y=h["OBSERVED"], mode="markers+lines", name="Observed", line=dict(color="#636EFA")))
+            if not a.empty:
+                fig.add_trace(go.Scatter(x=a["TS"], y=a["EXPECTED"], mode="lines", name="Expected", line=dict(color="#00CC96", dash="dash")))
+                fig.add_trace(go.Scatter(x=a["TS"], y=a["UPPER_BOUND"], mode="lines", line=dict(width=0), showlegend=False))
+                fig.add_trace(go.Scatter(x=a["TS"], y=a["LOWER_BOUND"], mode="lines", line=dict(width=0), fill="tonexty", fillcolor="rgba(0,204,150,0.15)", name="95% CI"))
+                anom_pts = a[a["IS_ANOMALY"] == True]
+                if not anom_pts.empty:
+                    fig.add_trace(go.Scatter(x=anom_pts["TS"], y=anom_pts["OBSERVED"], mode="markers", name="ANOMALY",
+                                             marker=dict(color="red", size=14, symbol="x")))
+            fig.update_layout(title=f"{gene} — Weekly Allele Frequency (16 weeks)", height=320, margin=dict(t=40, b=10), yaxis_title="Avg Allele Frequency")
             st.plotly_chart(fig, use_container_width=True)
 
 elif page == "AI Classify":
@@ -239,7 +250,8 @@ elif page == "AI Classify":
         FROM HEALTHCARE_GENOMICS.RAW.VARIANTS v
         JOIN HEALTHCARE_GENOMICS.RAW.PATIENTS p ON v.PATIENT_ID = p.PATIENT_ID
         WHERE v.GENE = 'BRCA1' AND v.VARIANT_TYPE = 'CNV' AND v.CLINICAL_SIGNIFICANCE = 'VUS'
-        ORDER BY v.ALLELE_FREQUENCY DESC
+          AND v.ALLELE_FREQUENCY < 0.05
+        ORDER BY v.DEPTH DESC
         LIMIT 5
     """).to_pandas()
 
