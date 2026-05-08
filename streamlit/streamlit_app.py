@@ -58,11 +58,20 @@ if page == "Variant Explorer":
     if not gene_stats.empty:
         for col in ["TOTAL", "PATHOGENIC_COUNT", "PATHOGENIC_PCT"]:
             gene_stats[col] = pd.to_numeric(gene_stats[col], errors="coerce")
-        gene_stats["HIGHLIGHT"] = gene_stats["GENE"].apply(lambda g: "BRCA1 (30.9%)" if g == "BRCA1" else "Other genes (~15%)")
+        top_gene = gene_stats.iloc[0]["GENE"]
+        top_pct = float(gene_stats.iloc[0]["PATHOGENIC_PCT"])
+        second_pct = float(gene_stats.iloc[1]["PATHOGENIC_PCT"]) if len(gene_stats) > 1 else top_pct
+        baseline = float(gene_stats["PATHOGENIC_PCT"].median())
+        ratio = (top_pct / second_pct) if second_pct else 1.0
+        gene_stats["HIGHLIGHT"] = gene_stats["GENE"].apply(
+            lambda g: f"{top_gene} ({top_pct:.1f}%)" if g == top_gene else f"Other genes (median ~{baseline:.0f}%)"
+        )
         fig = px.bar(gene_stats, x="GENE", y="PATHOGENIC_PCT", color="HIGHLIGHT",
-                     color_discrete_map={"BRCA1 (30.9%)": "#FF4B4B", "Other genes (~15%)": "#636EFA"},
-                     title="BRCA1 has 2x the pathogenic rate of any other gene")
-        fig.add_hline(y=15, line_dash="dot", line_color="gray", annotation_text="Baseline ~15%")
+                     color_discrete_map={f"{top_gene} ({top_pct:.1f}%)": "#FF4B4B",
+                                         f"Other genes (median ~{baseline:.0f}%)": "#636EFA"},
+                     title=f"{top_gene} leads pathogenic rate at {top_pct:.1f}% ({ratio:.2f}x vs next-highest)")
+        fig.add_hline(y=baseline, line_dash="dot", line_color="gray",
+                      annotation_text=f"Median ~{baseline:.0f}%")
         fig.update_layout(height=380, margin=dict(t=40, b=10), yaxis_title="Pathogenic %", showlegend=True)
         st.plotly_chart(fig, use_container_width=True)
 
