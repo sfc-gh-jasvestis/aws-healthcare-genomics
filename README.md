@@ -1,6 +1,6 @@
 # Genomics & Research Data Platform
 
-A Snowflake-powered precision medicine platform demonstrating variant analysis, cohort comparison, AI-driven variant interpretation, biobank management, and Iceberg-based data lake export for interoperability with AWS Glue and Athena.
+Snowflake-powered precision medicine platform demonstrating variant analysis, cohort comparison, AI-driven variant interpretation, biobank management, and Iceberg-based data lake export for interoperability with AWS Glue and Athena.
 
 ## Architecture
 
@@ -21,15 +21,14 @@ flowchart LR
     DT --> QS[QuickSight + Amazon Q]
 ```
 
-
 ## Personas
 
 | Persona | Role | Key Questions |
 |---------|------|---------------|
-| **Dr. Sarah Chen** | Principal Investigator | "Which patients carry the reclassified variant?" "Show me BRCA1 co-occurrence patterns" "Are specimens available for cascade testing?" |
-| **Dr. James Park** | Research Director | "What's our biobank utilization?" "How does our cohort compare to published literature?" "Export the affected cohort to the data lake for clinical follow-up" |
+| **Dr. Sarah Chen** | Principal Investigator | "Which patients carry the reclassified variant?" "Show me BRCA1 co-occurrence patterns." |
+| **Dr. James Park** | Research Director | "What's our biobank utilization?" "Export the affected cohort to the data lake." |
 
-## Data Scale
+## Data
 
 | Table | Rows | Description |
 |-------|------|-------------|
@@ -40,48 +39,40 @@ flowchart LR
 | PUBLICATIONS | 200 | Research papers with abstracts for Cortex Search |
 | COHORT_DEFINITIONS | 50 | Reusable cohort criteria |
 
-## Capabilities
-
-1. **Variant Analysis** — Gene-level aggregation with clinical significance filtering and strip-plot visualization
-2. **Cohort Comparison** — Side-by-side pathogenic variant burden: Responders vs Non-Responders
-3. **Biobank Management** — Specimen inventory, cascade testing readiness, quality metrics
-4. **Allele Frequency Anomaly Detection** — ML-based monitoring of 20 gene allele frequency series
-5. **AI Variant Interpretation** — Cortex AI generates ACMG-style pathogenicity assessments in real-time
-6. **Publication Search** — Cortex Search over 200 research abstracts for literature validation
-7. **Data Lake Export** — BRCA1+TP53 co-occurrence cohort exported to S3 → Glue Catalog → Athena
-8. **Conversational Agent** — Green-themed Cortex Agent combining analyst + publication search
-
-## Demo Narrative
-
-The demo centers on a **VUS reclassification crisis**: A BRCA1 Variant of Uncertain Significance (rs121913279) has just been reclassified to PATHOGENIC by the ACMG consortium based on new functional evidence. Over 200 patients in our research cohort carry this variant and need immediate clinical re-notification and cascade testing. The PI uses the platform to identify affected patients, confirm biobank specimen availability, validate the reclassification against literature, get AI-powered interpretation, and export the affected cohort to the AWS data lake for the clinical team's follow-up workflow.
-
 ## Build Instructions
 
-```bash
-# 1. Deploy Snowflake objects (run in order)
-for f in snowflake/0*.sql; do
-  snow sql -f "$f" -c <YOUR_CONNECTION>
-done
+### Prerequisites
+- Snowflake account with ACCOUNTADMIN access
+- Cortex AI enabled (ML Functions, Search, Agent)
+- Warehouse: CORTEX (Medium)
+- AWS CLI with S3, Glue, QuickSight access
 
-# 2. Deploy QuickSight resources
-chmod +x quicksight/deploy.sh
-./quicksight/deploy.sh
-
-# 3. Deploy Streamlit app
-snow streamlit deploy --database HEALTHCARE_GENOMICS --schema APP
-```
-
-## Tear Down
+### Deployment
 
 ```bash
-# Remove AWS resources
-chmod +x aws/teardown.sh
-./aws/teardown.sh
-
-# Remove Snowflake objects
-snow sql -q "DROP DATABASE IF EXISTS HEALTHCARE_GENOMICS CASCADE;" -c <YOUR_CONNECTION>
+snowsql -f snowflake/00_setup.sql
+snowsql -f snowflake/01_integrations.sql
+snowsql -f snowflake/02_raw_tables.sql
+snowsql -f snowflake/03_curated.sql
+snowsql -f snowflake/04_search.sql
+snowsql -f snowflake/05_ml.sql
+snowsql -f snowflake/06_semantic.sql
+snowsql -f snowflake/07_agent.sql
+snowsql -f snowflake/08_iceberg.sql
 ```
+
+### Streamlit App
+```
+HEALTHCARE_GENOMICS.APP.GENOMICS_PLATFORM_APP
+```
+
+## Key Demo Numbers
+
+- **VUS reclassification crisis** — BRCA1 rs121913279 upgraded to PATHOGENIC
+- **200+ affected patients** require immediate clinical re-notification
+- **100,000 variants** across 20 genes with anomaly detection
+- **Iceberg export** — affected cohort accessible from Athena for clinical follow-up
 
 ## License
 
-Apache 2.0
+Apache 2.0 — See [LICENSE](LICENSE) for details.
