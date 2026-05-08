@@ -4,39 +4,23 @@ A Snowflake-powered precision medicine platform demonstrating variant analysis, 
 
 ## Architecture
 
+A precision-medicine genomics platform built on **Snowflake** (Dynamic Tables, ML.ANOMALY_DETECTION, Cortex Search, semantic view, Cortex Agent) and **AWS** (S3, Apache Iceberg, AWS Glue, Athena, QuickSight + Amazon Q). Variants and biospecimens land in RAW; Snowflake builds the curated layer; Iceberg makes the variant catalog queryable from Athena and QuickSight.
+
+```mermaid
+flowchart LR
+    S3[S3 patient + variant + biospecimen feeds] --> SF[Snowflake RAW]
+    SF --> DT[Dynamic Tables VARIANT_SUMMARY / COHORT_DEMOGRAPHICS / BIOBANK_INVENTORY]
+    DT --> ML[ML.ANOMALY_DETECTION 20 genes]
+    DT --> CSearch[Cortex Search publications]
+    DT --> SemView[Semantic View]
+    DT --> AGT[Cortex Agent GenomicsAnalyst + PublicationSearch]
+    DT --> ICE[Iceberg variant export]
+    ICE --> GLUE[AWS Glue catalog]
+    GLUE --> ATH[Amazon Athena federated query]
+    DT --> ST[Streamlit Variants / Cohorts / Biobank / Forecast / AI Classify / Ask]
+    DT --> QS[QuickSight + Amazon Q]
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         STREAMLIT APPLICATION                            │
-│  Variants │ Cohorts │ Biobank │ Forecast │ AI Classify │ Ask Genomics  │
-└───────────┬─────────────────┬──────────────────┬────────────────────────┘
-            │                 │                  │
-┌───────────▼─────────────────▼──────────────────▼────────────────────────┐
-│                        CORTEX AGENT (Green)                              │
-│         GenomicsAnalyst Tool  +  PublicationSearch Tool                  │
-└───────────┬─────────────────┬──────────────────┬────────────────────────┘
-            │                 │                  │
-┌───────────▼─────┐ ┌────────▼────────┐ ┌──────▼──────────────────────────┐
-│  SEMANTIC VIEW  │ │  CORTEX SEARCH  │ │  ML MODELS                      │
-│  (3 DTs)        │ │  (Publications) │ │  Anomaly Detection (20 genes)   │
-└───────────┬─────┘ └────────┬────────┘ └──────┬──────────────────────────┘
-            │                 │                  │
-┌───────────▼─────────────────▼──────────────────▼────────────────────────┐
-│                      DYNAMIC TABLES (Curated)                           │
-│   VARIANT_SUMMARY  │  COHORT_DEMOGRAPHICS  │  BIOBANK_INVENTORY         │
-└───────────┬─────────────────┬──────────────────┬────────────────────────┘
-            │                 │                  │
-┌───────────▼─────────────────▼──────────────────▼────────────────────────┐
-│                         RAW SCHEMA                                       │
-│  PATIENTS │ VARIANTS │ BIOSPECIMENS │ PHENOTYPES │ PUBLICATIONS │ COHORTS│
-└───────────┬─────────────────────────────────────────────────────────────┘
-            │
-            ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    AWS INTEGRATION                                       │
-│   S3 Stage → Iceberg Export → Glue Catalog → Athena (federated query)  │
-│   QuickSight + Q (portfolio view, gene statistics)                      │
-└─────────────────────────────────────────────────────────────────────────┘
-```
+
 
 ## Personas
 
