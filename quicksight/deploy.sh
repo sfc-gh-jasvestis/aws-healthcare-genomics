@@ -1,7 +1,7 @@
 #!/bin/bash
 # QuickSight Deployment for Genomics Research Platform
 # Prerequisites: Data source 'genomics-snowflake' must be created manually in QuickSight Console
-# (Host: __SNOWFLAKE_ACCOUNT__.snowflakecomputing.com, DB: HEALTHCARE_GENOMICS, WH: CORTEX, User: QUICKSIGHT_HEALTHCARE_SVC)
+# (Host: <YOUR_SNOWFLAKE_ACCOUNT>.snowflakecomputing.com, DB: HEALTHCARE_GENOMICS, WH: CORTEX, User: QUICKSIGHT_HEALTHCARE_SVC)
 set -e
 
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
