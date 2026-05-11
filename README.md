@@ -21,6 +21,28 @@ flowchart LR
     DT --> QS[QuickSight + Amazon Q]
 ```
 
+## Snowflake Capabilities
+
+| Capability | Implementation |
+|-----------|---------------|
+| Dynamic Tables | VARIANT_SUMMARY / COHORT_DEMOGRAPHICS / BIOBANK_INVENTORY |
+| ML Functions | ML.ANOMALY_DETECTION across 20 gene series |
+| Cortex Search | 200 research publications indexed |
+| Cortex Agent | GenomicsAnalyst + PublicationSearch tools |
+| Semantic View | Structured analytics over variants, cohorts, biobank |
+| Streamlit | 6-page platform: Variants / Cohorts / Biobank / Anomaly / AI Classify / Ask |
+| Iceberg Tables | Variant export to S3 for cross-platform access |
+
+## AWS Services
+
+| Service | Role in Demo |
+|---------|-------------|
+| Amazon S3 | Patient, variant, and biospecimen data feeds |
+| AWS Glue | Iceberg catalog for exported cohort data |
+| Amazon Athena | Federated query over Iceberg variant catalog |
+| Amazon QuickSight | Executive genomics dashboard with direct query |
+| Amazon Q | Natural language analytics for Research Director |
+
 ## Personas
 
 | Persona | Role | Key Questions |
