@@ -88,6 +88,14 @@ snowsql -f snowflake/08_iceberg.sql
 HEALTHCARE_GENOMICS.APP.GENOMICS_PLATFORM_APP
 ```
 
+## Build Modes
+
+### Snowflake Only
+Run the SQL scripts in `snowflake/` (skip `01_integrations.sql`) and deploy the Streamlit app from `streamlit/deploy/`. Uses Cortex AI instead of Bedrock, and Snowflake Intelligence instead of QuickSight.
+
+### Full AWS + Snowflake
+Run all SQL scripts including `01_integrations.sql`, deploy the main Streamlit app from `streamlit/`, then run the QuickSight setup from `quicksight/`.
+
 ## Key Demo Numbers
 
 - **VUS reclassification crisis** — BRCA1 rs121913279 upgraded to PATHOGENIC
