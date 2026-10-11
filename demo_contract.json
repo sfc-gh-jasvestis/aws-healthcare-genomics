@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "repo": "aws-singapore-healthcare-genomics",
+  "operation": "on-demand",
+  "scope": "Harbourline Genomics, a fictional Singapore research sequencing network: 40 sequencers across 8 Singapore planning areas (Queenstown, Novena, Outram, Jurong East, Tampines, Woodlands, Seletar, Changi) x 5 assay lines",
+  "data_classification": "synthetic demonstration only; aggregate per instrument and day; no patient, sample-level or genomic records; not for clinical use",
+  "units": "gigabases (GB); TB = GB / 1e3",
+  "grains": {
+    "RAW.SEQUENCERS": "one row per sequencer (lab site x assay)",
+    "RAW.SEQUENCER_DAILY": "one row per sequencer per day (90 days)",
+    "RAW.REAGENT_KITS": "one row per sequencer (reagent kit snapshot)",
+    "CURATED.PERFORMANCE_SUMMARY": "one row per sequencer",
+    "CURATED.TREND_ANALYSIS": "one row per day",
+    "CURATED.FAILURE_MODE_SUMMARY": "one row per failure mode",
+    "CURATED.KPI_SUMMARY": "one row per KPI",
+    "ML.QC_FAIL_SCORES": "one row per sequencer (latest day)"
+  },
+  "metrics": {
+    "Yield Attainment": "100 * SUM(GB_OUTPUT) / SUM(GB_TARGET)",
+    "Samples Sequenced": "SUM(SAMPLE_COUNT)",
+    "Data Output (TB)": "SUM(GB_OUTPUT) / 1e3",
+    "QC Flags": "SUM(QC_FLAG_COUNT)",
+    "Confirmed Failed Runs": "SUM(QC_FAIL_COUNT)",
+    "QC Flag Precision": "100 * SUM(QC_FAIL_COUNT) / SUM(QC_FLAG_COUNT)",
+    "Failed Runs Re-queued": "SUM(RERUN_COUNT)",
+    "PM Compliance": "100 * SUM(PM_COMPLETED) / SUM(PM_DUE)",
+    "Sequencers Monitored": "COUNT(RAW.SEQUENCERS)",
+    "Reagent Kit Coverage": "100 * SUM(LEAST(ON_HAND_QTY, REQUIRED_QTY)) / SUM(REQUIRED_QTY)",
+    "Kits On Order": "SUM(ON_ORDER_QTY)"
+  },
+  "chart_bindings": {
+    "daily_samples": [
+      "CURATED.TREND_ANALYSIS.METRIC_DATE",
+      "SAMPLE_COUNT",
+      "QC_FLAG_COUNT"
+    ],
+    "flags_by_failure_mode": [
+      "CURATED.FAILURE_MODE_SUMMARY.FAILURE_MODE",
+      "QC_FLAG_COUNT",
+      "QC_FAIL_COUNT"
+    ],
+    "pm_vs_failed": [
+      "CURATED.PERFORMANCE_SUMMARY.PM_COMPLIANCE_PCT",
+      "QC_FAIL_COUNT"
+    ],
+    "quicksight_fail_risk": [
+      "ENTITY_ID",
+      "MAX(FAIL_PROB_7D)"
+    ]
+  },
+  "freshness": "MAX(EVENT_DATE) is an observation watermark; requestedAt is not freshness",
+  "required_capabilities": {
+    "core_pipeline": "Curated KPIs reconcile to a RAW recomputation (run_core.py checks this on every build)",
+    "forecast_and_anomaly": "14-day network-wide sample volume FORECAST; phasing ANOMALY_DETECTION (train 75 days, detect last 15)",
+    "search": "Cortex Search SEARCH.QC_SOP_SEARCH over synthetic run QC troubleshooting SOPs (one per assay and failure mode)",
+    "semantic_analytics": "Semantic view APP.SEQUENCING_ANALYTICS and Cortex Agent APP.SEQUENCING_AGENT using analyst + search tools",
+    "grounded_ai": "Agent answers return generated SQL and SOP citations; the action memo uses only KPI, sequencer, failure-mode and risk rows",
+    "quicksight": "DIRECT_QUERY dashboard (sequencers, daily samples, confirmed failed runs by sequencer, failed-run risk, run summaries loaded) over an existing Snowflake data source",
+    "quicksight_q": "Amazon Q topic over the curated datasets for natural-language questions",
+    "aws_ingestion": "S3 PutObject of run-summary batches -> S3 (runs/) -> Snowpipe AUTO_INGEST into RAW.LIVE_RUNS",
+    "notifications": "APP.LIVE_RUN_ALERT logs new QC_FLAG events to APP.ALERT_LOG and emails via SYSTEM$SEND_EMAIL; alert and tasks suspended between demos",
+    "orchestration": "Task graph APP.TASK_REFRESH_CURATED -> APP.TASK_RESCORE_RISK run on demand (EXECUTE TASK)",
+    "app_deployment": "SPCS service APP.SG_HEALTHCARE_GENOMICS_APP; routes /api/data, /api/ask, /api/agent",
+    "fail_risk_model": "Snowflake ML CLASSIFICATION of P(confirmed failed run in next 7 days) per sequencer, evaluated on an out-of-time holdout"
+  },
+  "builds": {
+    "snowflake": {
+      "database": "SINGAPORE_HEALTHCARE_GENOMICS_SNOWFLAKE",
+      "app_setting": "DEMO_PLATFORM=snowflake",
+      "memo": "Cortex AI_COMPLETE (claude-sonnet-4-5)",
+      "live_runs": "APP.SIMULATE_RUNS(n)"
+    },
+    "aws": {
+      "database": "SINGAPORE_HEALTHCARE_GENOMICS_AWS",
+      "app_setting": "DEMO_PLATFORM=aws",
+      "memo": "Amazon Bedrock Claude Sonnet 4.5 via APP.BEDROCK_GENERATE",
+      "capabilities": "see required_capabilities",
+      "live_runs": "S3 upload -> Snowpipe"
+    }
+  }
+}
